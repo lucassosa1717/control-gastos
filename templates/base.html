@@ -1,0 +1,690 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Control de Gastos{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --light-blue: #dbeafe;
+            --dark-blue: #1e40af;
+            --accent-blue: #3b82f6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: white !important;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 0 0.5rem;
+            border-radius: 8px;
+            padding: 0.5rem 1rem !important;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white !important;
+        }
+        
+        .profile-dropdown {
+            position: relative;
+        }
+        
+        .profile-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            object-fit: cover;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.1);
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(37, 99, 235, 0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+        }
+        
+        .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+        }
+        
+        .saldo-card {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+        
+        .saldo-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .mini-salario {
+            background: linear-gradient(135deg, var(--light-blue) 0%, #bfdbfe 100%);
+            border: 1px solid var(--primary-blue);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--dark-blue);
+            margin-bottom: 1rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 0.5rem;
+            }
+            
+            .navbar {
+                padding: 0.5rem 0;
+            }
+            
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+            
+            .nav-link {
+                margin: 0 0.2rem;
+                padding: 0.4rem 0.8rem !important;
+                font-size: 0.9rem;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+                border-radius: 10px;
+            }
+            
+            .card-header {
+                padding: 1rem;
+                border-radius: 10px 10px 0 0 !important;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .saldo-card {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .saldo-amount {
+                font-size: 2rem;
+            }
+            
+            .display-4 {
+                font-size: 2rem !important;
+            }
+            
+            .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+            
+            .btn-lg {
+                padding: 0.7rem 1.5rem;
+                font-size: 1rem;
+            }
+            
+            .form-control {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.9rem;
+            }
+            
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+            
+            .modal-body {
+                padding: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+            
+            .profile-img {
+                width: 35px;
+                height: 35px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .container-fluid {
+                padding: 0.25rem;
+            }
+            
+            .navbar-brand {
+                font-size: 1.1rem;
+            }
+            
+            .card {
+                border-radius: 8px;
+            }
+            
+            .card-header {
+                padding: 0.8rem;
+                border-radius: 8px 8px 0 0 !important;
+            }
+            
+            .card-body {
+                padding: 0.8rem;
+            }
+            
+            .saldo-amount {
+                font-size: 1.8rem;
+            }
+            
+            .display-4 {
+                font-size: 1.8rem !important;
+            }
+            
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+            
+            .btn-lg {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+            
+            .form-control {
+                padding: 0.5rem 0.7rem;
+                font-size: 0.85rem;
+            }
+            
+            .modal-dialog {
+                margin: 0.25rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+            
+            .profile-img {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .dropdown-menu {
+                font-size: 0.85rem;
+            }
+        }
+        
+        /* Mejoras para tablets */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container-fluid {
+                padding: 1rem;
+            }
+            
+            .card {
+                margin-bottom: 1.5rem;
+            }
+            
+            .saldo-amount {
+                font-size: 2.2rem;
+            }
+        }
+        
+        /* Mejoras adicionales para móviles */
+        @media (max-width: 768px) {
+            .salario-principal {
+                padding: 1.5rem;
+                margin: 0 0.5rem;
+            }
+            
+            .lead {
+                font-size: 1rem;
+            }
+            
+            .h5 {
+                font-size: 1rem;
+            }
+            
+            .input-group-text {
+                padding: 0.5rem 0.7rem;
+                font-size: 0.85rem;
+            }
+            
+            .badge {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.5rem;
+            }
+            
+            .btn-group-sm .btn {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            
+            .modal-header {
+                padding: 0.8rem 1rem;
+            }
+            
+            .modal-title {
+                font-size: 1.1rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .salario-principal {
+                padding: 1rem;
+                margin: 0 0.25rem;
+            }
+            
+            .card-header h3 {
+                font-size: 1.2rem;
+            }
+            
+            .card-header p {
+                font-size: 0.85rem;
+            }
+            
+            .fw-bold {
+                font-size: 0.9rem;
+            }
+            
+            .text-muted {
+                font-size: 0.75rem;
+            }
+            
+            .btn-group-sm .btn {
+                padding: 0.3rem 0.5rem;
+                font-size: 0.75rem;
+            }
+            
+            .modal-header {
+                padding: 0.6rem 0.8rem;
+            }
+            
+            .modal-body {
+                padding: 0.8rem;
+            }
+            
+            .modal-footer {
+                padding: 0.6rem 0.8rem;
+            }
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: var(--light-blue);
+            color: var(--dark-blue);
+            border: none;
+            font-weight: 600;
+        }
+        
+        .alert {
+            border: none;
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+        }
+        
+        .alert-danger {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+        }
+        
+        /* Validación visual de errores */
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6.4.4.4-.4M5.8 8.4l.4-.4.4.4M8.4 5.8l-.4.4.4.4M3.6 5.8l.4.4-.4.4'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .form-control.is-valid {
+            border-color: #198754;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.4-.4 1.4-1.4.4-.4-.4-.4-.4-.4-.4.4L1.9 5.93l-.4.4.4.4z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #dc3545;
+        }
+        
+        .valid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #198754;
+        }
+        
+        /* Notificaciones temporales */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1055;
+        }
+        
+        .toast {
+            background: white;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .toast-success {
+            border-left: 4px solid #198754;
+        }
+        
+        .toast-error {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .toast-header {
+            background: transparent;
+            border-bottom: none;
+            padding: 0.75rem 1rem 0.5rem;
+        }
+        
+        .toast-body {
+            padding: 0.5rem 1rem 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'index' %}">
+                <i class="fas fa-wallet me-2"></i>Control de Gastos
+            </a>
+            
+            <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
+                {% if user.is_authenticated %}
+                    <a class="nav-link" href="{% url 'index' %}">
+                        <i class="fas fa-home me-1"></i>Inicio
+                    </a>
+                    <a class="nav-link" href="{% url 'dashboard' %}">
+                        <i class="fas fa-chart-bar me-1"></i>Dashboard
+                    </a>
+                    
+                    <div class="dropdown profile-dropdown ms-3">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                            {% if user.perfilusuario.foto %}
+                                <img src="{{ user.perfilusuario.foto.url }}" alt="Perfil" class="profile-img me-2">
+                            {% else %}
+                                <div class="profile-img me-2 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.2);">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            {% endif %}
+                            {{ user.first_name|default:user.username }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'perfil' %}"><i class="fas fa-user me-2"></i>Mi Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a class="nav-link" href="{% url 'login' %}">Iniciar Sesión</a>
+                    <a class="nav-link" href="{% url 'registro' %}">Registrarse</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Contenedor de notificaciones toast -->
+    <div class="toast-container">
+        <div id="successToast" class="toast toast-success" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-check-circle text-success me-2"></i>
+                <strong class="me-auto">Éxito</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="successToastBody">
+                <!-- Mensaje dinámico -->
+            </div>
+        </div>
+        
+        <div id="errorToast" class="toast toast-error" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="errorToastBody">
+                <!-- Mensaje dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}
+        {% endblock %}
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Función para mostrar notificaciones toast
+        function showToast(type, message) {
+            const toastElement = document.getElementById(type + 'Toast');
+            const toastBody = document.getElementById(type + 'ToastBody');
+            
+            if (toastElement && toastBody) {
+                toastBody.textContent = message;
+                const toast = new bootstrap.Toast(toastElement, {
+                    delay: 5000,
+                    autohide: true
+                });
+                toast.show();
+            }
+        }
+        
+        // Validación visual de formularios
+        document.addEventListener('DOMContentLoaded', function() {
+            // Agregar validación visual a todos los formularios
+            const forms = document.querySelectorAll('form');
+            forms.forEach(function(form) {
+                const inputs = form.querySelectorAll('input, select, textarea');
+                
+                inputs.forEach(function(input) {
+                    input.addEventListener('blur', function() {
+                        validateField(this);
+                    });
+                    
+                    input.addEventListener('input', function() {
+                        if (this.classList.contains('is-invalid')) {
+                            validateField(this);
+                        }
+                    });
+                });
+                
+                form.addEventListener('submit', function(e) {
+                    let isValid = true;
+                    inputs.forEach(function(input) {
+                        if (!validateField(input)) {
+                            isValid = false;
+                        }
+                    });
+                    
+                    if (!isValid) {
+                        e.preventDefault();
+                    }
+                });
+            });
+            
+            // Mostrar notificaciones basadas en mensajes de Django
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'success' %}
+                        showToast('success', '{{ message|escapejs }}');
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        showToast('error', '{{ message|escapejs }}');
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        });
+        
+        function validateField(field) {
+            const value = field.value.trim();
+            const fieldType = field.type;
+            const isRequired = field.hasAttribute('required');
+            let isValid = true;
+            let errorMessage = '';
+            
+            // Limpiar clases previas
+            field.classList.remove('is-valid', 'is-invalid');
+            
+            // Remover mensajes de error previos
+            const existingFeedback = field.parentNode.querySelector('.invalid-feedback');
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+            
+            // Validación de campos requeridos
+            if (isRequired && value === '') {
+                isValid = false;
+                errorMessage = 'Este campo es obligatorio.';
+            }
+            // Validación de email
+            else if (fieldType === 'email' && value !== '') {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    isValid = false;
+                    errorMessage = 'Ingresa un email válido.';
+                }
+            }
+            // Validación de contraseñas
+            else if (field.name === 'password1' && value !== '') {
+                if (value.length < 8) {
+                    isValid = false;
+                    errorMessage = 'La contraseña debe tener al menos 8 caracteres.';
+                }
+            }
+            else if (field.name === 'password2' && value !== '') {
+                const password1 = document.querySelector('input[name="password1"]');
+                if (password1 && value !== password1.value) {
+                    isValid = false;
+                    errorMessage = 'Las contraseñas no coinciden.';
+                }
+            }
+            
+            // Aplicar clases y mensajes
+            if (isValid && value !== '') {
+                field.classList.add('is-valid');
+            } else if (!isValid) {
+                field.classList.add('is-invalid');
+                
+                // Agregar mensaje de error
+                const feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback';
+                feedback.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>' + errorMessage;
+                field.parentNode.appendChild(feedback);
+            }
+            
+            return isValid;
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

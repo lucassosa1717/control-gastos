@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ meta.nombre }} - Detalle de Meta{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Encabezado de la meta -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-{{ meta.color }}">
+                <div class="card-header bg-{{ meta.color }} text-white">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-{{ meta.icono }} me-3 fs-3"></i>
+                        <div>
+                            <h3 class="mb-0">{{ meta.nombre }}</h3>
+                            <small class="opacity-75">{{ meta.descripcion|default:"Sin descripción" }}</small>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge bg-light text-dark fs-6">{{ meta.get_estado_display }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Progreso de la meta -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h5>Progreso de Ahorro</h5>
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div class="progress-bar bg-{{ meta.color }}" role="progressbar" 
+                                     style="width: {{ meta.porcentaje_completado }}%" 
+                                     aria-valuenow="{{ meta.porcentaje_completado }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ meta.porcentaje_completado|floatformat:1 }}%
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span>{% if meta.moneda == 'USD' %}US${% else %}${% endif %}{{ meta.monto_ahorrado|floatformat:0 }} ahorrado</span>
+                                <span>{% if meta.moneda == 'USD' %}US${% else %}${% endif %}{{ meta.monto_objetivo|floatformat:0 }} objetivo</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h5>Tiempo Restante</h5>
+                                {% if meta.dias_restantes > 0 %}
+                                    <div class="display-6 text-{{ meta.color }}">{{ meta.dias_restantes }}</div>
+                                    <small class="text-muted">días restantes</small>
+                                {% elif meta.dias_restantes == 0 %}
+                                    <div class="display-6 text-warning">¡Hoy!</div>
+                                    <small class="text-muted">vence hoy</small>
+                                {% else %}
+                                    <div class="display-6 text-danger">Vencida</div>
+                                    <small class="text-muted">{{ meta.dias_restantes|add:"-1" }} días de retraso</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información financiera -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Monto Restante</h6>
+                                    <h4 class="text-{{ meta.color }}">{% if meta.moneda == 'USD' %}US${% else %}${% endif %}{{ meta.monto_restante|floatformat:0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title mb-1">Ahorro Mensual Recomendado</h5>
+                                    <h4 class="text-info">{% if meta.moneda == 'USD' %}US${% else %}${% endif %}{{ meta.ahorro_mensual_recomendado|floatformat:0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Ahorro Semanal Recomendado</h6>
+                                    <h4 class="text-success">{% if meta.moneda == 'USD' %}US${% else %}${% endif %}{{ meta.ahorro_semanal_recomendado|floatformat:0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recomendación inteligente -->
+    {% if recomendacion %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card {% if recomendacion.es_ajustada %}border-warning{% else %}border-success{% endif %}">
+                <div class="card-header {% if recomendacion.es_ajustada %}bg-warning{% else %}bg-success{% endif %} text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Recomendación Inteligente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">{{ recomendacion.mensaje }}</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Ahorro mensual recomendado:</strong> 
+                            {% if meta.moneda == 'USD' %}US${% else %}${% endif %}{{ recomendacion.recomendacion_mensual|floatformat:0 }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Tu capacidad de ahorro:</strong> 
+                            {% if meta.moneda == 'USD' %}US${% else %}${% endif %}{{ recomendacion.capacidad_ahorro|floatformat:0 }}
+                        </div>
+                    </div>
+                    {% if recomendacion.nueva_fecha_sugerida %}
+                    <div class="mt-2">
+                        <strong>Nueva fecha sugerida:</strong> {{ recomendacion.nueva_fecha_sugerida|date:"d/m/Y" }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Formulario para agregar ahorro -->
+    {% if meta.estado == 'activa' %}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Agregar Ahorro
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ form_agregar.monto.id_for_label }}" class="form-label">
+                                <i class="fas fa-dollar-sign me-1"></i>
+                                {{ form_agregar.monto.label }}
+                            </label>
+                            {{ form_agregar.monto }}
+                            {% if form_agregar.monto.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form_agregar.monto.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form_agregar.descripcion.id_for_label }}" class="form-label">
+                                <i class="fas fa-comment me-1"></i>
+                                {{ form_agregar.descripcion.label }}
+                            </label>
+                            {{ form_agregar.descripcion }}
+                            {% if form_agregar.descripcion.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form_agregar.descripcion.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                Agregar Ahorro
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>
+                        Acciones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'editar_meta' meta.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i>
+                            Editar Meta
+                        </a>
+                        <form method="post" action="{% url 'pausar_reactivar_meta' meta.id %}" class="d-inline">
+                            {% csrf_token %}
+                            {% if meta.estado == 'activa' %}
+                                <button type="submit" class="btn btn-outline-warning w-100">
+                                    <i class="fas fa-pause me-2"></i>
+                                    Pausar Meta
+                                </button>
+                            {% elif meta.estado == 'pausada' %}
+                                <button type="submit" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-play me-2"></i>
+                                    Reactivar Meta
+                                </button>
+                            {% endif %}
+                        </form>
+                        <a href="{% url 'eliminar_meta' meta.id %}" class="btn btn-outline-danger" 
+                           onclick="return confirm('¿Estás seguro de que quieres eliminar esta meta?')">
+                            <i class="fas fa-trash me-2"></i>
+                            Eliminar Meta
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Botón de regreso -->
+    <div class="row">
+        <div class="col-12">
+            <a href="{% url 'modo_ahorro' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>
+                Volver al Modo Ahorro
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

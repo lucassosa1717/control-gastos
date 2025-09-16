@@ -1,0 +1,767 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Control de Gastos{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Advertencias -->
+    {% if advertencia_limite or vencimientos_proximos %}
+    <div class="row mb-3">
+        <div class="col-12">
+            <!-- Advertencia de límite de salario -->
+            {% if advertencia_limite %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>¡Atención!</strong> Te estás acercando al límite de tu salario mensual. 
+                Solo te quedan <strong>${{ saldo_restante|floatformat:0 }}</strong> pesos disponibles este mes.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            
+            <!-- Advertencias de vencimientos próximos -->
+            {% if vencimientos_proximos %}
+            {% for vencimiento in vencimientos_proximos %}
+            <div class="alert {% if vencimiento.dias_restantes == 0 %}alert-danger{% elif vencimiento.dias_restantes <= 1 %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+                <i class="fas fa-calendar-exclamation me-2"></i>
+                <strong>
+                    {% if vencimiento.dias_restantes == 0 %}
+                        ¡Vence hoy!
+                    {% elif vencimiento.dias_restantes == 1 %}
+                        ¡Vence mañana!
+                    {% else %}
+                        Vence en {{ vencimiento.dias_restantes }} días
+                    {% endif %}
+                </strong>
+                {{ vencimiento.descripcion }} - Fecha: {{ vencimiento.fecha_vencimiento|date:"d/m/Y" }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+
+
+    
+    <!-- Resumen del mes actual -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white {% if saldo_restante >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Saldo Restante</h6>
+                            <h4>${{ saldo_restante|floatformat:0 }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Disponible por Fin de Semana (Sáb-Dom)</h6>
+                            <h4>${{ gasto_por_finde|floatformat:0 }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-week fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Monto Ahorrado</h6>
+                            <h4>${{ estadisticas_ahorro.monto_total_ahorrado|floatformat:0 }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-piggy-bank fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Estadísticas Generales</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Promedio Mensual</h6>
+                                <h4 class="text-primary">${{ promedio_mensual|floatformat:0 }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Mes con Más Gastos</h6>
+                                <h4 class="text-danger">{{ mes_mayor_gasto }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Mes con Menos Gastos</h6>
+                                <h4 class="text-success">{{ mes_menor_gasto }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                             <div class="text-center p-3 bg-light rounded">
+                                 <h6 class="text-muted">Uso del Salario</h6>
+                                 <h4 class="{% if porcentaje_usado > 80 %}text-danger{% elif porcentaje_usado > 60 %}text-warning{% else %}text-success{% endif %} mb-2">{{ porcentaje_usado|floatformat:0 }}%</h4>
+                                 <div class="progress mb-2" style="height: 12px;">
+                                     <div class="progress-bar {% if porcentaje_usado > 80 %}bg-danger{% elif porcentaje_usado > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                          style="width: {{ porcentaje_usado }}%"></div>
+                                 </div>
+                                 <small class="text-muted">Del salario mensual</small>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modo Ahorro -->
+    {% if estadisticas_ahorro.metas_activas > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-piggy-bank me-2"></i>
+                        Modo Ahorro
+                        <a href="{% url 'modo_ahorro' %}" class="btn btn-light btn-sm float-end">
+                            <i class="fas fa-eye me-1"></i>Ver todas
+                        </a>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="display-4 text-success mb-2">
+                                    <i class="fas fa-target"></i>
+                                </div>
+                                <h3 class="text-success mb-1">{{ estadisticas_ahorro.metas_activas }}</h3>
+                                <p class="mb-1">Meta{{ estadisticas_ahorro.metas_activas|pluralize }} activa{{ estadisticas_ahorro.metas_activas|pluralize }}</p>
+                                <small class="text-muted">${{ estadisticas_ahorro.monto_total_ahorrado|floatformat:0 }} de ${{ estadisticas_ahorro.monto_total_objetivos|floatformat:0 }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="display-4 text-info mb-2">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <h3 class="text-info mb-1">${{ estadisticas_ahorro.capacidad_ahorro_mensual|floatformat:0 }}</h3>
+                                <p class="mb-1">Capacidad mensual</p>
+                                <small class="text-muted">Basado en tu historial</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Metas activas:</h6>
+                            {% for meta_rec in estadisticas_ahorro.metas_con_recomendaciones|slice:":2" %}
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                                <div>
+                                    <strong>{{ meta_rec.meta.nombre }}</strong>
+                                    <div class="progress mt-1" style="width: 200px; height: 8px;">
+                                        <div class="progress-bar bg-success" style="width: {{ meta_rec.meta.porcentaje_completado }}%"></div>
+                                    </div>
+                                    <small class="text-muted">{{ meta_rec.meta.porcentaje_completado|floatformat:1 }}% completado</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-success fw-bold">${{ meta_rec.recomendacion.recomendacion_mensual|floatformat:0 }}/mes</div>
+                                    <small class="text-muted">recomendado</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% if estadisticas_ahorro.metas_activas > 2 %}
+                            <small class="text-muted">y {{ estadisticas_ahorro.metas_activas|add:"-2" }} meta{{ estadisticas_ahorro.metas_activas|add:"-2"|pluralize }} más...</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif estadisticas_ahorro.total_metas == 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-lightbulb fa-2x"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-1">¡Comienza a ahorrar!</h5>
+                        <p class="mb-2">Crea tu primera meta de ahorro y recibe recomendaciones personalizadas.</p>
+                        <a href="{% url 'modo_ahorro' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-plus me-1"></i>Crear meta de ahorro
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Calendario de Gastos Mensual -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Calendario de Gastos</h5>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-outline-primary btn-sm me-2" id="prevMonth">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="currentMonthYear" class="fw-bold mx-3"></span>
+                        <button class="btn btn-outline-primary btn-sm ms-2" id="nextMonth">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Calendario -->
+                    <div id="calendar-container">
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <div id="calendar-grid" class="calendar-grid">
+                                    <!-- El calendario se generará aquí con JavaScript -->
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-primary mb-3">
+                                            <i class="fas fa-info-circle me-2"></i>Resumen del Mes
+                                        </h6>
+                                        <div id="month-summary">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span><i class="fas fa-dollar-sign text-success me-1"></i>Total:</span>
+                                                <span id="month-total" class="fw-bold text-danger">$0.00</span>
+                                            </div>
+
+                                            <hr>
+                                            <div class="d-flex justify-content-between">
+                                                <span><i class="fas fa-piggy-bank text-success me-1"></i>Saldo Restante:</span>
+                                                <span id="month-remaining" class="fw-bold text-success">$0.00</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Detalles del día seleccionado -->
+                                        <div id="day-details" class="mt-4" style="display: none;">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 class="text-primary mb-0">
+                                                    <i class="fas fa-calendar-day me-2"></i>Gastos del <span id="selected-date"></span>
+                                                </h6>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-success" id="add-expense-btn" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+                                                        <i class="fas fa-plus me-1"></i>Gasto
+                                                    </button>
+                                                    <button class="btn btn-sm btn-info" id="add-vencimiento-btn" data-bs-toggle="modal" data-bs-target="#addVencimientoModal">
+                                                        <i class="fas fa-calendar-check me-1"></i>Vencimiento
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div id="day-expenses" class="small">
+                                                <!-- Los gastos del día se mostrarán aquí -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Leyenda -->
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="d-flex justify-content-center flex-wrap">
+                                <span class="badge bg-success me-2 mb-2">
+                                    <i class="fas fa-circle me-1"></i>Sin gastos
+                                </span>
+                                <span class="badge bg-warning me-2 mb-2">
+                                    <i class="fas fa-circle me-1"></i>Gastos bajos ($1-50)
+                                </span>
+                                <span class="badge bg-danger me-2 mb-2">
+                                    <i class="fas fa-circle me-1"></i>Gastos altos ($50+)
+                                </span>
+                                <span class="badge bg-primary me-2 mb-2">
+                                    <i class="fas fa-circle me-1"></i>Día actual
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar gasto desde calendario -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addExpenseModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>Agregar Gasto - <span id="modal-selected-date"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addExpenseForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <input type="text" class="form-control" id="descripcion" name="descripcion" required placeholder="Descripción del gasto">
+                    </div>
+                    <div class="mb-3">
+                        <label for="monto" class="form-label">Monto</label>
+                        <input type="number" class="form-control" id="monto" name="monto" step="0.01" required placeholder="0.00" style="-webkit-appearance: textfield; -moz-appearance: textfield;" onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46" oninput="this.value = this.value.replace(/[^0-9.]/g, ''); if(this.value < 0) this.value = Math.abs(this.value);">
+                    </div>
+                    <input type="hidden" id="fecha_seleccionada" name="fecha_seleccionada">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>Guardar Gasto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar vencimiento desde calendario -->
+<div class="modal fade" id="addVencimientoModal" tabindex="-1" aria-labelledby="addVencimientoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addVencimientoModalLabel">
+                    <i class="fas fa-calendar-check me-2"></i>Agregar Vencimiento - <span id="modal-selected-date-vencimiento"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addVencimientoForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="descripcion_vencimiento" class="form-label">Descripción del vencimiento</label>
+                        <input type="text" class="form-control" id="descripcion_vencimiento" name="descripcion" required placeholder="Ej: Pago de tarjeta de crédito, Renovación de seguro">
+                    </div>
+                    <div class="mb-3">
+                        <label for="fecha_vencimiento" class="form-label">Fecha de vencimiento</label>
+                        <input type="date" class="form-control" id="fecha_vencimiento" name="fecha_vencimiento" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="activo_vencimiento" name="activo" checked>
+                        <label class="form-check-label" for="activo_vencimiento">
+                            Activo (mostrar advertencias)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-info">
+                        <i class="fas fa-save me-1"></i>Guardar Vencimiento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.calendar-grid {
+    max-width: 100%;
+}
+
+.calendar-day {
+    min-height: 60px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.calendar-day:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.calendar-day.empty {
+    background: transparent;
+    border: none;
+    cursor: default;
+}
+
+.calendar-day.empty:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.calendar-day.today {
+    border: 2px solid #007bff;
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.calendar-day.selected {
+    background: #007bff;
+    color: white;
+}
+
+.calendar-day.no-expenses {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: #28a745;
+}
+
+.calendar-day.low-expenses {
+    background: rgba(255, 193, 7, 0.2);
+    border-color: #ffc107;
+}
+
+.calendar-day.high-expenses {
+    background: rgba(220, 53, 69, 0.2);
+    border-color: #dc3545;
+}
+
+.day-number {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.expense-amount {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #dc3545;
+    text-align: center;
+    margin-top: auto;
+}
+
+.calendar-day.selected .expense-amount {
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .calendar-day {
+        min-height: 45px;
+        padding: 2px;
+    }
+    
+    .day-number {
+        font-size: 0.8rem;
+    }
+    
+    .expense-amount {
+        font-size: 0.7rem;
+    }
+}
+</style>
+
+<script>
+// Variables del calendario
+let currentDate = new Date();
+let selectedDate = null;
+const gastosData_calendar = {{ gastos_json|safe }};
+const salarioMensual = {{ perfil.salario_mensual|default:0 }};
+
+// Función para generar el calendario
+function generateCalendar(year, month) {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    
+    document.getElementById('currentMonthYear').textContent = `${monthNames[month]} ${year}`;
+    
+    let calendarHTML = '<div class="calendar-header"><div class="row text-center fw-bold text-muted small mb-2">';
+    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    dayNames.forEach(day => {
+        calendarHTML += `<div class="col">${day}</div>`;
+    });
+    calendarHTML += '</div></div><div class="calendar-body">';
+    
+    let dayCount = 1;
+    const today = new Date();
+    
+    // Calcular gastos por día para este mes
+    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+    const monthExpenses = {};
+    
+    if (gastosData_calendar[monthKey]) {
+        gastosData_calendar[monthKey].forEach(gasto => {
+            const day = new Date(gasto.fecha).getDate();
+            if (!monthExpenses[day]) {
+                monthExpenses[day] = { total: 0, gastos: [] };
+            }
+            monthExpenses[day].total += parseFloat(gasto.monto);
+            monthExpenses[day].gastos.push(gasto);
+        });
+    }
+    
+    // Generar semanas
+    for (let week = 0; week < 6; week++) {
+        calendarHTML += '<div class="row mb-1">';
+        
+        for (let day = 0; day < 7; day++) {
+            const cellDate = week * 7 + day - startingDayOfWeek + 1;
+            
+            if (cellDate > 0 && cellDate <= daysInMonth) {
+                const isToday = today.getFullYear() === year && 
+                               today.getMonth() === month && 
+                               today.getDate() === cellDate;
+                
+                const dayExpenses = monthExpenses[cellDate] || { total: 0, gastos: [] };
+                let cellClass = 'calendar-day';
+                
+                if (isToday) cellClass += ' today';
+                if (dayExpenses.total === 0) cellClass += ' no-expenses';
+                else if (dayExpenses.total <= 50) cellClass += ' low-expenses';
+                else cellClass += ' high-expenses';
+                
+                calendarHTML += `
+                    <div class="col p-1">
+                        <div class="${cellClass}" data-date="${cellDate}" data-expenses='${JSON.stringify(dayExpenses.gastos)}'>
+                            <div class="day-number">${cellDate}</div>
+                            ${dayExpenses.total > 0 ? `<div class="expense-amount">$${dayExpenses.total.toFixed(0)}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                dayCount++;
+            } else {
+                calendarHTML += '<div class="col p-1"><div class="calendar-day empty"></div></div>';
+            }
+        }
+        
+        calendarHTML += '</div>';
+        
+        if (dayCount > daysInMonth) break;
+    }
+    
+    calendarHTML += '</div>';
+    document.getElementById('calendar-grid').innerHTML = calendarHTML;
+    
+    // Actualizar resumen del mes
+    updateMonthSummary(year, month);
+    
+    // Agregar event listeners a los días
+    document.querySelectorAll('.calendar-day[data-date]').forEach(day => {
+        day.addEventListener('click', function() {
+            const date = this.getAttribute('data-date');
+            const expenses = JSON.parse(this.getAttribute('data-expenses') || '[]');
+            showDayDetails(date, month, year, expenses);
+            
+            // Remover selección anterior
+            document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+            // Agregar selección actual
+            this.classList.add('selected');
+        });
+    });
+}
+
+// Función para actualizar el resumen del mes
+function updateMonthSummary(year, month) {
+    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+    let totalMonth = 0;
+    
+    if (gastosData_calendar[monthKey]) {
+        gastosData_calendar[monthKey].forEach(gasto => {
+            const amount = parseFloat(gasto.monto);
+            totalMonth += amount;
+        });
+    }
+    
+    const remaining = salarioMensual - totalMonth;
+    
+    document.getElementById('month-total').textContent = `$${totalMonth.toFixed(2)}`;
+    document.getElementById('month-remaining').textContent = `$${remaining.toFixed(2)}`;
+    
+    // Cambiar color del saldo según si es positivo o negativo
+    const remainingElement = document.getElementById('month-remaining');
+    if (remaining >= 0) {
+        remainingElement.className = 'fw-bold text-success';
+    } else {
+        remainingElement.className = 'fw-bold text-danger';
+    }
+}
+
+// Variables globales para el día seleccionado
+let selectedDay = null;
+let selectedMonth = null;
+let selectedYear = null;
+
+// Función para mostrar detalles del día
+function showDayDetails(date, month, year, expenses) {
+    const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    
+    // Guardar la fecha seleccionada
+    selectedDay = date;
+    selectedMonth = month;
+    selectedYear = year;
+    
+    document.getElementById('selected-date').textContent = `${date} de ${monthNames[month]}`;
+    document.getElementById('modal-selected-date').textContent = `${date} de ${monthNames[month]}`;
+    document.getElementById('modal-selected-date-vencimiento').textContent = `${date} de ${monthNames[month]}`;
+    
+    // Establecer la fecha en el campo de fecha del modal de vencimiento
+    const fechaVencimiento = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+    document.getElementById('fecha_vencimiento').value = fechaVencimiento;
+    
+    const dayExpensesContainer = document.getElementById('day-expenses');
+    
+    if (expenses.length === 0) {
+        dayExpensesContainer.innerHTML = '<p class="text-muted">No hay gastos registrados este día</p>';
+    } else {
+        let expensesHTML = '';
+        expenses.forEach(expense => {
+            expensesHTML += `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white rounded border">
+                    <div>
+                        <div class="fw-bold">${expense.descripcion}</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-danger">$${parseFloat(expense.monto).toFixed(2)}</div>
+                        <small class="text-muted">${new Date(expense.fecha).toLocaleTimeString()}</small>
+                    </div>
+                </div>
+            `;
+        });
+        dayExpensesContainer.innerHTML = expensesHTML;
+    }
+    
+    document.getElementById('day-details').style.display = 'block';
+}
+
+
+
+
+
+// Inicializar calendario cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar calendario
+    generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    
+
+    
+    // Event listeners para navegación del calendario
+    document.getElementById('prevMonth').addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        document.getElementById('day-details').style.display = 'none';
+    });
+    
+    document.getElementById('nextMonth').addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        document.getElementById('day-details').style.display = 'none';
+    });
+    
+    // Manejar el envío del formulario de agregar gasto
+    document.getElementById('addExpenseForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        formData.append('descripcion', document.getElementById('descripcion').value);
+        formData.append('monto', document.getElementById('monto').value);
+        
+        // Crear la fecha seleccionada en formato YYYY-MM-DD
+        const fechaSeleccionada = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+        formData.append('fecha_seleccionada', fechaSeleccionada);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        fetch('/agregar_gasto_calendario/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cerrar el modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addExpenseModal'));
+                modal.hide();
+                
+                // Limpiar el formulario
+                document.getElementById('addExpenseForm').reset();
+                
+                // Recargar la página para actualizar los datos
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al agregar el gasto');
+        });
+    });
+    
+    // Manejar el envío del formulario de agregar vencimiento
+    document.getElementById('addVencimientoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        formData.append('descripcion', document.getElementById('descripcion_vencimiento').value);
+        formData.append('fecha_vencimiento', document.getElementById('fecha_vencimiento').value);
+        formData.append('activo', document.getElementById('activo_vencimiento').checked);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        fetch('/agregar_vencimiento/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cerrar el modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addVencimientoModal'));
+                modal.hide();
+                
+                // Limpiar el formulario
+                document.getElementById('addVencimientoForm').reset();
+                
+                // Mostrar mensaje de éxito
+                alert('Vencimiento agregado exitosamente');
+                
+                // Recargar la página para actualizar las advertencias
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al agregar el vencimiento');
+        });
+    });
+});
+</script>{% endblock %}
