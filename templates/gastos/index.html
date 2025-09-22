@@ -63,7 +63,8 @@
                                     <i class="fas fa-file-image me-2"></i>Subir Historial
                                 </button>
                                 <button class="btn" style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white;" type="button" data-bs-toggle="modal" data-bs-target="#tarjetaCreditoModal">
-                                    <i class="fas fa-credit-card me-2"></i>RESUMEN TARJETA
+                                    <i class="fas fa-credit-card me-2"></i>Resumen Tarjeta
+                                    
                                 </button>
                             </div>
                         </div>
@@ -179,17 +180,17 @@
                                                     </small>
                                                 </div>
                                                 <div class="d-flex align-items-center gap-3">
-                                                    <span class="badge bg-danger fs-5 px-3 py-2">-${{ gasto.monto|floatformat:0 }}</span>
+                                                    <span class="text-danger fw-bold" style="font-size: 1.1rem;">-${{ gasto.monto|floatformat:0 }}</span>
                                                     <div class="d-flex gap-2">
-                                                        <button type="button" class="btn btn-primary btn-sm shadow-sm" 
+                                                        <button type="button" class="btn btn-outline-primary btn-sm" 
                                                                 onclick="editarGasto({{ gasto.id }}, '{{ gasto.descripcion|escapejs }}', {{ gasto.monto }})"
                                                                 title="Editar gasto">
-                                                            <i class="fas fa-edit me-1"></i>Editar
+                                                            <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-danger btn-sm shadow-sm" 
+                                                        <button type="button" class="btn btn-outline-danger btn-sm" 
                                                                 onclick="eliminarGasto({{ gasto.id }})"
                                                                 title="Eliminar gasto">
-                                                            <i class="fas fa-trash me-1"></i>Eliminar
+                                                            <i class="fas fa-trash"></i>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -550,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="modal-body">
                 <div class="alert alert-info" role="alert">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Instrucciones:</strong> Sube una captura de pantalla de tu historial de MercadoPago. 
+                    <strong>Instrucciones:</strong> Sube una captura de pantalla de tu historial de MercadoPago o pega una imagen copiada. 
                     El sistema extraerá automáticamente todos los gastos con descripción, monto, fecha y prioridad.
                 </div>
                 
@@ -566,6 +567,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                accept="image/*" required>
                         <div class="form-text">
                             Formatos soportados: JPG, PNG, JPEG. Tamaño máximo: 10MB
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-paste me-2 text-info"></i>O pega una imagen copiada aquí
+                        </label>
+                        <div id="paste-area" class="border rounded p-3 text-center bg-light" style="min-height: 100px; cursor: pointer;">
+                            <i class="fas fa-paste fs-3 mb-2 text-secondary"></i>
+                            <p class="mb-0 text-secondary">Haz clic aquí y pega la imagen con Ctrl+V</p>
+                        </div>
+                        <div class="form-text">
+                            Puedes pegar directamente una imagen copiada desde tu portapapeles
                         </div>
                     </div>
                     
@@ -1026,20 +1040,80 @@ document.addEventListener('DOMContentLoaded', function() {
     const historialPreview = document.getElementById('historialPreview');
     const historialImagePreview = document.getElementById('historialImagePreview');
     const btnProcesarHistorial = document.getElementById('btnProcesarHistorial');
+    const pasteArea = document.getElementById('paste-area');
     
-    // Vista previa de imagen
+    // Función para manejar la imagen (tanto subida como pegada)
+    function handleImage(file) {
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                historialImagePreview.src = e.target.result;
+                historialPreview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        } else {
+            historialPreview.style.display = 'none';
+        }
+    }
+    
+    // Vista previa de imagen subida
     if (historialImageInput) {
         historialImageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    historialImagePreview.src = e.target.result;
-                    historialPreview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
+            handleImage(file);
+        });
+    }
+    
+    // Manejar pegado de imágenes
+    if (pasteArea) {
+        // Hacer que el área de pegado sea enfocable
+        pasteArea.tabIndex = 0;
+        
+        // Función para manejar el pegado
+        function handlePaste(e) {
+            const items = (e.clipboardData || window.clipboardData).items;
+            let imageFile = null;
+            
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    imageFile = items[i].getAsFile();
+                    break;
+                }
+            }
+            
+            if (imageFile) {
+                // Crear un nuevo objeto File para el input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(imageFile);
+                historialImageInput.files = dataTransfer.files;
+                
+                // Mostrar la imagen
+                handleImage(imageFile);
+                
+                // Cambiar el estilo del área de pegado para indicar éxito
+                pasteArea.innerHTML = '<i class="fas fa-check-circle fs-3 text-success"></i><p class="mb-0 text-success">Imagen pegada correctamente</p>';
+                setTimeout(() => {
+                    pasteArea.innerHTML = '<i class="fas fa-paste fs-3 mb-2 text-secondary"></i><p class="mb-0 text-secondary">Haz clic aquí y pega la imagen con Ctrl+V</p>';
+                }, 3000);
             } else {
-                historialPreview.style.display = 'none';
+                // Mostrar mensaje de error si no hay imagen
+                pasteArea.innerHTML = '<i class="fas fa-exclamation-circle fs-3 text-danger"></i><p class="mb-0 text-danger">No se detectó ninguna imagen en el portapapeles</p>';
+                setTimeout(() => {
+                    pasteArea.innerHTML = '<i class="fas fa-paste fs-3 mb-2 text-secondary"></i><p class="mb-0 text-secondary">Haz clic aquí y pega la imagen con Ctrl+V</p>';
+                }, 3000);
+            }
+        }
+        
+        // Eventos para el área de pegado
+        pasteArea.addEventListener('paste', handlePaste);
+        pasteArea.addEventListener('click', function() {
+            pasteArea.focus();
+        });
+        
+        // Permitir pegar en cualquier parte del modal
+        document.addEventListener('paste', function(e) {
+            if (document.getElementById('historialMercadoPagoModal').classList.contains('show')) {
+                handlePaste(e);
             }
         });
     }

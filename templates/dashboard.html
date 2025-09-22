@@ -240,12 +240,12 @@
                     <!-- Calendario -->
                     <div id="calendar-container">
                         <div class="row mb-3">
-                            <div class="col-md-8">
+                            <div class="col-lg-8 col-md-12 mb-3 mb-lg-0">
                                 <div id="calendar-grid" class="calendar-grid">
                                     <!-- El calendario se generará aquí con JavaScript -->
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-lg-4 col-md-12">
                                 <div class="card bg-light border-0">
                                     <div class="card-body">
                                         <h6 class="card-title text-primary mb-3">
@@ -266,8 +266,8 @@
                                         
                                         <!-- Detalles del día seleccionado -->
                                         <div id="day-details" class="mt-4" style="display: none;">
-                                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                                <h6 class="text-primary mb-0">
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                                                <h6 class="text-primary mb-2 mb-sm-0">
                                                     <i class="fas fa-calendar-day me-2"></i>Gastos del <span id="selected-date"></span>
                                                 </h6>
                                                 <div class="btn-group" role="group">
@@ -390,6 +390,7 @@
 <style>
 .calendar-grid {
     max-width: 100%;
+    overflow-x: auto;
 }
 
 .calendar-day {
@@ -399,6 +400,44 @@
     padding: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
+    
+    /* Responsive adjustments */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Responsive styles for calendar */
+@media (max-width: 768px) {
+    .calendar-day {
+        min-height: 50px;
+        padding: 2px;
+    }
+    
+    .day-number {
+        font-size: 0.9rem;
+    }
+    
+    .expense-amount {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .calendar-day {
+        min-height: 40px;
+    }
+    
+    .day-number {
+        font-size: 0.8rem;
+    }
+    
+    .expense-amount {
+        font-size: 0.7rem;
+    }
+}
+
+.calendar-day {
     position: relative;
     background: white;
     display: flex;
@@ -503,8 +542,12 @@ function generateCalendar(year, month) {
     
     let calendarHTML = '<div class="calendar-header"><div class="row text-center fw-bold text-muted small mb-2">';
     const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    dayNames.forEach(day => {
-        calendarHTML += `<div class="col">${day}</div>`;
+    // Versión responsive de los nombres de días
+    const dayNamesShort = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    
+    // Usar nombres cortos en móviles y nombres completos en pantallas más grandes
+    dayNames.forEach((day, index) => {
+        calendarHTML += `<div class="col"><span class="d-none d-md-inline">${day}</span><span class="d-md-none">${dayNamesShort[index]}</span></div>`;
     });
     calendarHTML += '</div></div><div class="calendar-body">';
     
@@ -522,7 +565,10 @@ function generateCalendar(year, month) {
                 monthExpenses[day] = { total: 0, gastos: [] };
             }
             monthExpenses[day].total += parseFloat(gasto.monto);
-            monthExpenses[day].gastos.push(gasto);
+                // Simplificar descripción antes de agregar al array
+                const descripcionSimplificada = gasto.descripcion.replace(/^[\d\s\-:\.]+\s*/, '').trim();
+                gasto.descripcion_simplificada = descripcionSimplificada || gasto.descripcion;
+                monthExpenses[day].gastos.push(gasto);
         });
     }
     
@@ -647,7 +693,7 @@ function showDayDetails(date, month, year, expenses) {
             expensesHTML += `
                 <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white rounded border">
                     <div>
-                        <div class="fw-bold">${expense.descripcion}</div>
+                        <div class="fw-bold">${expense.descripcion_simplificada || expense.descripcion}</div>
                     </div>
                     <div class="text-end">
                         <div class="fw-bold text-danger">$${parseFloat(expense.monto).toFixed(2)}</div>

@@ -17,6 +17,25 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import json
 from .utils import extraer_datos_imagen, procesar_historial_mercadopago
+from .utils_estadisticas import guardar_estadisticas_mensuales, obtener_estadisticas_mensuales
+from django.contrib.admin.views.decorators import staff_member_required
+
+@login_required
+def estadisticas_mensuales(request):
+    """Vista para mostrar estadísticas mensuales guardadas"""
+    estadisticas = obtener_estadisticas_mensuales(request.user)
+    return render(request, 'gastitos/estadisticas_mensuales.html', {
+        'estadisticas': estadisticas
+    })
+
+@staff_member_required
+def ejecutar_limpieza_mensual(request):
+    """Vista para ejecutar manualmente la limpieza de gastos mensuales"""
+    if request.method == 'POST':
+        estadisticas = guardar_estadisticas_mensuales()
+        messages.success(request, 'Se han guardado las estadísticas y limpiado los gastos del mes anterior.')
+        return redirect('estadisticas_mensuales')
+    return render(request, 'gastitos/confirmar_limpieza.html')
 
 from .utils_ahorro import (
     obtener_estadisticas_ahorro_usuario,

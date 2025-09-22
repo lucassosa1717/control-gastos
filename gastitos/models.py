@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 from datetime import datetime
 from django.db.models import Sum
 from decimal import Decimal
+import calendar
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -55,6 +56,23 @@ class Gasto(models.Model):
     
     def __str__(self):
         return f"{self.descripcion} - ${self.monto}"
+        
+    def save(self, *args, **kwargs):
+        # Simplificar la descripción eliminando prefijos no deseados
+        import re
+        
+        # Casos específicos como "oo Golonor Sa" o "og Cafemocasrl017"
+        if re.match(r'^[a-zA-Z]{2}\s+', self.descripcion):
+            descripcion_simplificada = re.sub(r'^[a-zA-Z]{2}\s+', '', self.descripcion)
+        # Otros casos con números o caracteres especiales al inicio
+        else:
+            descripcion_simplificada = re.sub(r'^[\d\s\-:\.]+\s*', '', self.descripcion)
+        
+        # Si aún hay contenido después de la simplificación, actualiza la descripción
+        if descripcion_simplificada.strip():
+            self.descripcion = descripcion_simplificada.strip()
+            
+        super().save(*args, **kwargs)
 
 class GastoFijo(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -109,6 +127,72 @@ class Vencimiento(models.Model):
     def esta_vencido(self):
         """Verifica si ya está vencido"""
         return self.dias_restantes < 0
+        
+class EstadisticaMensual(models.Model):
+    """Modelo para almacenar estadísticas mensuales de gastos"""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    año = models.IntegerField()
+    mes = models.IntegerField()  # 1-12
+    total_gastos = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('usuario', 'año', 'mes')
+        ordering = ['-año', '-mes']
+        
+    def __str__(self):
+        nombre_mes = calendar.month_name[self.mes]
+        return f"{nombre_mes} {self.año} - ${self.total_gastos}"
+        
+    @classmethod
+    def guardar_estadisticas_y_limpiar(cls, año=None, mes=None):
+        """
+        Guarda las estadísticas del mes especificado y elimina los gastos de ese mes.
+        Si no se especifica año y mes, usa el mes anterior al actual.
+        """
+        from django.db import transaction
+        
+        # Si no se especifica año y mes, usar el mes anterior
+        if año is None or mes is None:
+            fecha_actual = datetime.now()
+            # Si estamos en enero, el mes anterior es diciembre del año anterior
+            if fecha_actual.month == 1:
+                mes = 12
+                año = fecha_actual.year - 1
+            else:
+                mes = fecha_actual.month - 1
+                año = fecha_actual.year
+        
+        # Obtener el primer y último día del mes
+        ultimo_dia = calendar.monthrange(año, mes)[1]
+        inicio_mes = datetime(año, mes, 1, 0, 0, 0)
+        fin_mes = datetime(año, mes, ultimo_dia, 23, 59, 59)
+        
+        # Procesar cada usuario
+        for usuario in User.objects.all():
+            with transaction.atomic():
+                # Obtener todos los gastos del mes para este usuario
+                gastos_mes = Gasto.objects.filter(
+                    usuario=usuario,
+                    fecha__gte=inicio_mes,
+                    fecha__lte=fin_mes
+                )
+                
+                # Calcular el total de gastos
+                total = gastos_mes.aggregate(total=Sum('monto'))['total'] or Decimal('0')
+                
+                # Guardar la estadística mensual
+                estadistica, created = cls.objects.update_or_create(
+                    usuario=usuario,
+                    año=año,
+                    mes=mes,
+                    defaults={'total_gastos': total}
+                )
+                
+                # Eliminar los gastos del mes
+                gastos_mes.delete()
+                
+        return True
 
 
 
